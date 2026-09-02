@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "GIT_HUB_REPOSITORY", uniqueConstraints = @UniqueConstraint(columnNames = {"owner", "repository_name"}))
+@Table(name = "GIT_HUB_REPOSITORY")
 public class GitHubRepositoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
