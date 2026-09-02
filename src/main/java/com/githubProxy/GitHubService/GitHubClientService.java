@@ -19,6 +19,7 @@ public class GitHubClientService {
     public RepositoryDto getByOwnerAndRepositoryName(@NonNull String owner, @NonNull String repositoryName) {
         log.info("Finding repository with name {} by {}", repositoryName, owner);
         GitHubResponse response = gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName);
+        log.info("Repository {} found with this details : {}",repositoryName,response);
         return gitHubClientMapper.toDto(response);
     }
 }
