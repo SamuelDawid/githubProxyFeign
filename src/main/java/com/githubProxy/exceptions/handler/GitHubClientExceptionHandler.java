@@ -1,0 +1,24 @@
+package com.githubProxy.exceptions.handler;
+
+import com.githubProxy.dto.ErrorMessageDto;
+import com.githubProxy.exceptions.RepositoryNotFoundException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.LocalDateTime;
+
+@RestControllerAdvice
+@Slf4j
+public class GitHubClientExceptionHandler {
+    @ExceptionHandler(RepositoryNotFoundException.class)
+    public ResponseEntity<ErrorMessageDto> handleNotFound(RepositoryNotFoundException exception){
+        log.error("Repository not found: {}",exception.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorMessageDto(404,
+                        exception.getMessage(),
+                        LocalDateTime.now()));
+    }
+}
