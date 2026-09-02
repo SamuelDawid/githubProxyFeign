@@ -1,15 +1,14 @@
 package com.githubProxy.customErrorDecoder;
 
 import com.githubProxy.exceptions.RepositoryNotFoundException;
+import com.githubProxy.exceptions.handler.GitHubClientException;
 import feign.Response;
-import feign.RetryableException;
 import feign.codec.ErrorDecoder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AccessDeniedException;
 
 @Slf4j
 public class GitHubClientErrorDecoder implements ErrorDecoder {
@@ -21,17 +20,8 @@ public class GitHubClientErrorDecoder implements ErrorDecoder {
                 methodKey, status, responseBody);
 
         return switch (status) {
-            case BAD_REQUEST -> new IllegalArgumentException("Invalid request: " + responseBody);
-            case UNAUTHORIZED -> new SecurityException("Unauthorized access");
-            case FORBIDDEN -> new AccessDeniedException("Access forbidden");
             case NOT_FOUND -> new RepositoryNotFoundException(response.request().url());
-            case INTERNAL_SERVER_ERROR -> new RuntimeException("Internal server error");
-            case SERVICE_UNAVAILABLE -> new RetryableException(response.status(),
-                            "Service unavailable",
-                            null,
-                            (Long) null,
-                            response.request());
-            default -> new Exception("Unexpected error: " + responseBody);
+            default -> new GitHubClientException("Unexpected error: " + responseBody, HttpStatus.BAD_GATEWAY);
         };
     }
 
