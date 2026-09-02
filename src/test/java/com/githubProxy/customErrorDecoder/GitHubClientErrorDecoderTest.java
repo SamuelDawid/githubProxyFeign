@@ -1,10 +1,13 @@
 package com.githubProxy.customErrorDecoder;
 
 import com.githubProxy.exceptions.RepositoryNotFoundException;
+import com.githubProxy.exceptions.handler.GitHubClientException;
 import feign.Request;
 import feign.Response;
+import feign.RetryableException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -20,8 +23,16 @@ class GitHubClientErrorDecoderTest {
         this.decoder = new GitHubClientErrorDecoder();
     }
 
-    private Response responseWithStatus(int status , Request request, String reason){
-            return Response.builder()
+    private Response responseWithStatus(int status, String reason){
+        Request request = Request.create(
+                Request.HttpMethod.GET,
+                "https://api.github.com/repos/owner/repo",
+                Map.of(),
+                null,
+                StandardCharsets.UTF_8,
+                null
+        );
+        return Response.builder()
                     .status(status)
                     .reason(reason)
                     .request(request)
@@ -31,17 +42,19 @@ class GitHubClientErrorDecoderTest {
 
     @Test
     void decode_When404_ShouldReturnRepositoryNotFoundException() {
-        Request request = Request.create(
-                Request.HttpMethod.GET,
-                "https://api.github.com/repos/owner/repo",
-                Map.of(),
-                null,
-                StandardCharsets.UTF_8,
-                null
-        );
-        Response response = responseWithStatus(404,request,"Not Found");
-
+        //Given
+        Response response = responseWithStatus(404,"Not Found");
+        //When + Then
         Exception result = decoder.decode("GitHubClient#getRepo(String,String)",response);
         assertInstanceOf(RepositoryNotFoundException.class,result);
+    }
+
+    @Test
+    void decode_When502_ShouldReturnGitHubClientException() {
+        //Given
+        Response response = responseWithStatus(502,"Server error");
+        //When = Then
+        Exception result = decoder.decode("GitHubClient#getRepo(String,String)",response);
+        assertEquals(GitHubClientException.class,result.getClass());
     }
 }

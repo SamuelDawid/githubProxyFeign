@@ -14,10 +14,19 @@ import java.time.LocalDateTime;
 @Slf4j
 public class GitHubClientExceptionHandler {
     @ExceptionHandler(RepositoryNotFoundException.class)
-    public ResponseEntity<ErrorMessageDto> handleNotFound(RepositoryNotFoundException exception){
-        log.error("Repository not found: {}",exception.getMessage());
+    public ResponseEntity<ErrorMessageDto> handleNotFound(RepositoryNotFoundException exception) {
+        log.error("Repository not found: {}", exception.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorMessageDto(404,
+                        exception.getMessage(),
+                        LocalDateTime.now()));
+    }
+
+    @ExceptionHandler(GitHubClientException.class)
+    public ResponseEntity<ErrorMessageDto> handleGitHubClientException(GitHubClientException exception) {
+        log.error("Rejected: {} -> {}", exception.getMessage(), exception.getStatus().value());
+        return ResponseEntity.status(exception.getStatus())
+                .body(new ErrorMessageDto(exception.getStatus().value(),
                         exception.getMessage(),
                         LocalDateTime.now()));
     }
