@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -189,5 +190,13 @@ class GitHubClientControllerTest {
                         jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
                         jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
                 );
+    }
+    @Test
+    void delete_WhenRepositoryExists_ShouldReturn204() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}",owner,repoName)).andExpect(status().isNoContent());
+        verify(service).delete(owner,repoName);
     }
 }
