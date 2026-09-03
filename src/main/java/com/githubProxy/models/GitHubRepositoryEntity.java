@@ -15,11 +15,24 @@ public class GitHubRepositoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(nullable = false)
     private String owner;
+    @Column(nullable = false)
     private String repositoryName;
+    @Column(nullable = false)
     private String fullName;
     private String description;
     private String cloneUrl;
     private Long stargazersCount;
     private OffsetDateTime createdAt;
+
+    public GitHubRepositoryEntity(String owner, String repositoryName, String fullName, String description, String cloneUrl, Long stargazersCount, OffsetDateTime createdAt) {
+        this.owner = owner;
+        this.repositoryName = repositoryName;
+        this.fullName = fullName;
+        this.description = description;
+        this.cloneUrl = cloneUrl;
+        this.stargazersCount = stargazersCount;
+        this.createdAt = createdAt;
+    }
 }
