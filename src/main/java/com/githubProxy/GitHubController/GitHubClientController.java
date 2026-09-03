@@ -27,7 +27,7 @@ public class GitHubClientController {
         return service.create(owner,repositoryName);
     }
     @PutMapping("/repositories/{owner}/{repository-name}")
-    public GitHubRepositoryDto put(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command){
+    public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command){
         return service.update(owner,repositoryName,command);
     }
 }
