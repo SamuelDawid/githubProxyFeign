@@ -231,8 +231,9 @@ class GitHubClientServiceTest {
         );
         verify(repository).save(any(GitHubRepositoryEntity.class));
     }
+
     @Test
-    void delete_WhenRepositoryExists_ShouldRemoveLocalRepository(){
+    void delete_WhenRepositoryExists_ShouldRemoveLocalRepository() {
         //Given
         String owner = "Owner";
         String repoName = "AlreadySavedRepository";
@@ -246,9 +247,9 @@ class GitHubClientServiceTest {
                 3L,
                 OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC)
         );
-        when(repository.findByOwnerAndRepositoryName(owner,repoName)).thenReturn(Optional.of(existing));
+        when(repository.findByOwnerAndRepositoryName(owner, repoName)).thenReturn(Optional.of(existing));
         //When + Then
-        service.delete(owner,repoName);
+        service.delete(owner, repoName);
         verify(repository).delete(existing);
     }
 

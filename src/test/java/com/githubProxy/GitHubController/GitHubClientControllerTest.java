@@ -158,6 +158,7 @@ class GitHubClientControllerTest {
                         jsonPath("$.status").value(404)
                 );
     }
+
     @Test
     void update_WhenLocalRepositoryExists_ShouldReturn200() throws Exception {
         //Given
@@ -177,11 +178,11 @@ class GitHubClientControllerTest {
                 1L,
                 OffsetDateTime.of(LocalDateTime.of(2021, 2, 22, 12, 22), ZoneOffset.UTC)
         );
-        when(service.update(owner,repoName,putCommand)).thenReturn(expected);
+        when(service.update(owner, repoName, putCommand)).thenReturn(expected);
         //When + Then
-        mockMvc.perform(put("/repositories/{owner}/{repository-name}",owner,repoName)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsBytes(putCommand)))
+        mockMvc.perform(put("/repositories/{owner}/{repository-name}", owner, repoName)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsBytes(putCommand)))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
@@ -191,12 +192,13 @@ class GitHubClientControllerTest {
                         jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
                 );
     }
+
     @Test
     void delete_WhenRepositoryExists_ShouldReturn204() throws Exception {
         //Given
         String owner = "Owner";
         String repoName = "SomeRepoCoIstnieje";
-        mockMvc.perform(delete("/repositories/{owner}/{repository-name}",owner,repoName)).andExpect(status().isNoContent());
-        verify(service).delete(owner,repoName);
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName)).andExpect(status().isNoContent());
+        verify(service).delete(owner, repoName);
     }
 }
