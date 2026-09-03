@@ -1,6 +1,7 @@
 package com.githubProxy.GitHubController;
 
 import com.githubProxy.GitHubService.GitHubClientService;
+import com.githubProxy.dto.GitHubRepositoryPutCommand;
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
 import com.githubProxy.exceptions.LocalRepositoryNotFoundException;
@@ -9,6 +10,7 @@ import com.githubProxy.exceptions.RepositoryNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -18,8 +20,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -154,6 +155,39 @@ class GitHubClientControllerTest {
                         status().isNotFound(),
                         jsonPath("$.message").value("Local repository " + repoName + " not found for: " + owner),
                         jsonPath("$.status").value(404)
+                );
+    }
+    @Test
+    void update_WhenLocalRepositoryExists_ShouldReturn200() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        GitHubRepositoryPutCommand putCommand = new GitHubRepositoryPutCommand(
+                "Owner/SomeRepoCoIstnieje",
+                "newDescription",
+                null,
+                1L,
+                null
+        );
+        GitHubRepositoryDto expected = new GitHubRepositoryDto(
+                "Owner/SomeRepoCoIstnieje",
+                "newDescription",
+                "http://api.git/repos/Owner/SomeRepoCoIstnieje",
+                1L,
+                OffsetDateTime.of(LocalDateTime.of(2021, 2, 22, 12, 22), ZoneOffset.UTC)
+        );
+        when(service.update(owner,repoName,putCommand)).thenReturn(expected);
+        //When + Then
+        mockMvc.perform(put("/repositories/{owner}/{repository-name}",owner,repoName)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsBytes(putCommand)))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
+                        jsonPath("$.description").value("newDescription"),
+                        jsonPath("$.stars").value(1),
+                        jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
+                        jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
                 );
     }
 }
