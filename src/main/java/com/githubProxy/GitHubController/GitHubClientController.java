@@ -30,4 +30,9 @@ public class GitHubClientController {
     public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command){
         return service.update(owner,repositoryName,command);
     }
+    @DeleteMapping("/repositories/{owner}/{repository-name}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
+        service.delete(owner,repositoryName);
+    }
 }
