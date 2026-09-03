@@ -3,6 +3,7 @@ package com.githubProxy.GitHubController;
 import com.githubProxy.GitHubService.GitHubClientService;
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
+import com.githubProxy.exceptions.LocalRepositoryNotFoundException;
 import com.githubProxy.exceptions.RepositoryAlreadyExistsException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -111,6 +112,48 @@ class GitHubClientControllerTest {
                         status().isConflict(),
                         jsonPath("$.message").value(owner + " already has repository " + repoName),
                         jsonPath("$.status").value(409)
+                );
+    }
+
+    @Test
+    void getLocalRepositoryByOwnerAndRepositoryName_WhenLocalRepositoryExists_ShouldReturn200() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        GitHubRepositoryDto expected = new GitHubRepositoryDto(
+                "Owner/SomeRepoCoIstnieje",
+                "Some nice description",
+                "http://api.git/repos/Owner/SomeRepoCoIstnieje",
+                3L,
+                OffsetDateTime.of(LocalDateTime.of(2021, 2, 22, 12, 22), ZoneOffset.UTC)
+
+        );
+        when(service.getLocalRepositoryByOwnerAndRepositoryName(owner, repoName)).thenReturn(expected);
+        //When
+        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName))
+                .andExpectAll(
+                        status().isOk(),
+                        jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
+                        jsonPath("$.description").value("Some nice description"),
+                        jsonPath("$.stars").value(3),
+                        jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
+                        jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
+
+                );
+    }
+
+    @Test
+    void getLocalRepositoryByOwnerAndRepositoryName_WhenLocalRepositoryDoesNotExists_ShouldReturn404() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        when(service.getLocalRepositoryByOwnerAndRepositoryName(owner, repoName)).thenThrow(new LocalRepositoryNotFoundException(owner, repoName));
+        //When + Then
+        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName))
+                .andExpectAll(
+                        status().isNotFound(),
+                        jsonPath("$.message").value("Local repository " + repoName + " not found for: " + owner),
+                        jsonPath("$.status").value(404)
                 );
     }
 }
