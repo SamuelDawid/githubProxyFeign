@@ -2,6 +2,7 @@ package com.githubProxy.GitHubService;
 
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
+import com.githubProxy.exceptions.LocalRepositoryNotFoundException;
 import com.githubProxy.exceptions.RepositoryAlreadyExistsException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import com.githubProxy.gitHubClient.GitHubClient;
@@ -9,16 +10,19 @@ import com.githubProxy.gitHubClient.GitHubResponse;
 import com.githubProxy.mappers.GitHubClientMapper;
 import com.githubProxy.models.GitHubRepositoryEntity;
 import com.githubProxy.repositories.GitHubRepositoriesRepository;
+import jakarta.persistence.Column;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,39 +34,41 @@ class GitHubClientServiceTest {
     private GitHubClientMapper gitHubClientMapper;
     private GitHubClientService service;
     private GitHubRepositoriesRepository repository;
+
     @BeforeEach
-    void setUp(){
+    void setUp() {
         this.gitHubClient = Mockito.mock(GitHubClient.class);
         this.gitHubClientMapper = Mappers.getMapper(GitHubClientMapper.class);
         this.repository = Mockito.mock(GitHubRepositoriesRepository.class);
-        this.service = new GitHubClientService(gitHubClient,gitHubClientMapper,repository);
+        this.service = new GitHubClientService(gitHubClient, gitHubClientMapper, repository);
     }
 
 
     @Test
-    void getByOwnerAndRepositoryName_WhenRepositoryExistsShouldReturnMatchingDto(){
-       //Given
+    void getByOwnerAndRepositoryName_WhenRepositoryExistsShouldReturnMatchingDto() {
+        //Given
         String owner = "Samuel";
         String repositoryName = "newAppOlalal";
         GitHubResponse response = new GitHubResponse(
-                "Samuel/newAppOlalal",null,
+                "Samuel/newAppOlalal", null,
                 "http://api.github.someUrl",
                 0L,
-                OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC));
-        when(gitHubClient.getByOwnerAndRepositoryName(owner,repositoryName)).thenReturn(response);
-       //When
-        RepositoryDto result = service.getByOwnerAndRepositoryName(owner,repositoryName);
+                OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC));
+        when(gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName)).thenReturn(response);
+        //When
+        RepositoryDto result = service.getByOwnerAndRepositoryName(owner, repositoryName);
         //Then
         Assertions.assertAll(
-                () -> assertEquals("Samuel/newAppOlalal",result.fullName()),
-                () -> assertEquals("http://api.github.someUrl",result.cloneUrl()),
+                () -> assertEquals("Samuel/newAppOlalal", result.fullName()),
+                () -> assertEquals("http://api.github.someUrl", result.cloneUrl()),
                 () -> assertNull(result.description()),
-                () -> assertEquals(0L,result.stargazersCount()),
-                () -> assertEquals("2000-03-11T15:12Z",result.createdAt().toString()),
-                () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC), result.createdAt())
+                () -> assertEquals(0L, result.stargazersCount()),
+                () -> assertEquals("2000-03-11T15:12Z", result.createdAt().toString()),
+                () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC), result.createdAt())
         );
 
     }
+
     @Test
     void getByOwnerAndRepositoryName_WhenRepositoryDoesNotExists_ShouldThrowRepositoryNotFoundException() {
         //Given
@@ -73,8 +79,56 @@ class GitHubClientServiceTest {
         assertThrows(RepositoryNotFoundException.class,
                 () -> service.getByOwnerAndRepositoryName(owner, repoName));
     }
+
     @Test
-    void create_WhenRepositoryAndOwnerDoesExists_ShouldReturnMappedDto(){
+    void getLocalRepositoryByOwnerAndRepositoryName_WhenRepositoryExists_ShouldReturnMatchingDto() {
+        //Given
+        String owner = "owner";
+        String repoName = "SomeExistingRepository";
+        GitHubRepositoryEntity returned = buildRepositoryEntity(
+                1L,
+                "owner",
+                "SomeExistingRepository",
+                "owner/SomeExistingRepository",
+                "Some desctiption",
+                "http://api.github.someUrl",
+                6L,
+                OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC)
+        );
+        GitHubRepositoryDto expected = new GitHubRepositoryDto(
+                "owner/SomeExistingRepository",
+                "Some desctiption",
+                "http://api.github.someUrl",
+                6L,
+                OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC)
+        );
+        when(repository.findByOwnerAndRepositoryName(owner, repoName)).thenReturn(Optional.of(returned));
+        //When
+        GitHubRepositoryDto result = service.getLocalRepositoryByOwnerAndRepositoryName(owner,repoName);
+        //Then
+        assertAll(
+                () -> assertEquals(expected.fullName(),result.fullName()),
+                () -> assertEquals(expected.cloneUrl(),result.cloneUrl()),
+                () -> assertEquals(expected.createdAt(),result.createdAt()),
+                () -> assertEquals(expected.description(),result.description()),
+                () -> assertEquals(expected.stars(),result.stars())
+        );
+    }
+    @Test
+    void getLocalRepositoryByOwnerAndRepositoryName_WhenLocalRepositoryDoesNotExists_ShouldThrowLocalRepositoryNotFoundException(){
+        //Given
+        String owner = "owner";
+        String repoName = "SomeExistingRepository";
+        when(repository.findByOwnerAndRepositoryName(owner,repoName)).thenReturn(Optional.empty());
+        //When + Then
+        LocalRepositoryNotFoundException exception = assertThrowsExactly(LocalRepositoryNotFoundException.class,
+                () -> service.getLocalRepositoryByOwnerAndRepositoryName(owner,repoName));
+        assertEquals("Local repository " + repoName + " not found for: " + owner,exception.getMessage());
+    }
+
+
+    @Test
+    void create_WhenRepositoryAndOwnerDoesExists_ShouldReturnMappedDto() {
         //Given
         String owner = "Owner";
         String repoName = "ExistingRepo";
@@ -85,24 +139,25 @@ class GitHubClientServiceTest {
                 "Some description",
                 "http://api.github.someUrl",
                 3L,
-                OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC)
+                OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC)
 
         );
         when(repository.save(any(GitHubRepositoryEntity.class))).thenReturn(expected);
         //When
-        GitHubRepositoryDto result =service.create(owner,repoName);
+        GitHubRepositoryDto result = service.create(owner, repoName);
         verify(repository).save(any(GitHubRepositoryEntity.class));
         // Then
         assertAll(
-                () -> assertEquals("http://api.github.someUrl",result.cloneUrl()),
-                () -> assertEquals("Some description",result.description()),
-                () -> assertEquals(3L,result.stars()),
-                () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC),result.createdAt())
+                () -> assertEquals("http://api.github.someUrl", result.cloneUrl()),
+                () -> assertEquals("Some description", result.description()),
+                () -> assertEquals(3L, result.stars()),
+                () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC), result.createdAt())
 
         );
     }
+
     @Test
-    void create_WhenRepositoryAndOwnerDoesExists_ShouldMapGitHubResponseToEntity(){
+    void create_WhenRepositoryAndOwnerDoesExists_ShouldMapGitHubResponseToEntity() {
         //Given
         String owner = "Owner";
         String repoName = "SomeOtherExistingRepo";
@@ -111,33 +166,39 @@ class GitHubClientServiceTest {
                 "Some other fascinating description",
                 "http://api.github.someUrl",
                 1L,
-                OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC)
+                OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC)
 
         );
-        when(gitHubClient.getByOwnerAndRepositoryName(owner,repoName)).thenReturn(response);
-        service.create(owner,repoName);
+        when(gitHubClient.getByOwnerAndRepositoryName(owner, repoName)).thenReturn(response);
+        service.create(owner, repoName);
         ArgumentCaptor<GitHubRepositoryEntity> captor = ArgumentCaptor.forClass(GitHubRepositoryEntity.class);
         verify(repository).save(captor.capture());
         assertAll(
-                () -> assertEquals("Owner",captor.getValue().getOwner()),
-                () -> assertEquals("SomeOtherExistingRepo",captor.getValue().getRepositoryName()),
-                () -> assertEquals("http://api.github.someUrl",captor.getValue().getCloneUrl()),
-                () -> assertEquals("Some other fascinating description",captor.getValue().getDescription()),
-                () -> assertEquals(1L,captor.getValue().getStargazersCount())
+                () -> assertEquals("Owner", captor.getValue().getOwner()),
+                () -> assertEquals("SomeOtherExistingRepo", captor.getValue().getRepositoryName()),
+                () -> assertEquals("http://api.github.someUrl", captor.getValue().getCloneUrl()),
+                () -> assertEquals("Some other fascinating description", captor.getValue().getDescription()),
+                () -> assertEquals(1L, captor.getValue().getStargazersCount())
         );
     }
+
     @Test
-    void create_WhenRepositoryAlreadyExists_ShouldThrowRepositoryAlreadyExistsException(){
+    void create_WhenRepositoryAlreadyExists_ShouldThrowRepositoryAlreadyExistsException() {
         //Given
         String owner = "Owner";
         String repoName = "AlreadySavedRepository";
-        when(repository.existsByOwnerAndRepositoryName(owner,repoName)).thenReturn(true);
+        when(repository.existsByOwnerAndRepositoryName(owner, repoName)).thenReturn(true);
         //When + Then
         RepositoryAlreadyExistsException exception = assertThrows(RepositoryAlreadyExistsException.class,
-                () -> service.create(owner,repoName));
+                () -> service.create(owner, repoName));
         assertTrue(exception.getMessage().contains(owner + " already has repository " + repoName));
         verify(gitHubClient, never()).getByOwnerAndRepositoryName(any(), any());
         verify(repository, never()).save(any());
     }
 
+    private GitHubRepositoryEntity buildRepositoryEntity(Long id, String owner, String repositoryName, String fullName, String description, String cloneUrl, Long stargazersCount, OffsetDateTime createdAt) {
+        GitHubRepositoryEntity entity = new GitHubRepositoryEntity(owner, repositoryName, fullName, description, cloneUrl, stargazersCount, createdAt);
+        ReflectionTestUtils.setField(entity,"id",id);
+        return entity;
+    }
 }
