@@ -1,5 +1,6 @@
 package com.githubProxy.models;
 
+import com.githubProxy.dto.GitHubRepositoryPutCommand;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -35,5 +36,34 @@ public class GitHubRepositoryEntity {
         this.cloneUrl = cloneUrl;
         this.stargazersCount = stargazersCount;
         this.createdAt = createdAt;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if (this == o){return  true;}
+        if(!(o instanceof GitHubRepositoryEntity other)){
+            return false;
+        }
+        return id != null && id.equals(other.getId());
+    }
+    @Override
+    public int hashCode(){return getClass().hashCode();}
+
+    public void updateLocalRepository( GitHubRepositoryPutCommand putCommand){
+        if(putCommand.fullName() != null){
+            this.fullName = putCommand.fullName();
+        }
+        if(putCommand.cloneUrl() != null){
+            this.cloneUrl = putCommand.cloneUrl();
+        }
+        if(putCommand.description() != null) {
+        this.description = putCommand.description();
+        }
+        if(putCommand.stars() != null){
+            this.stargazersCount = putCommand.stars();
+        }
+        if(putCommand.createdAt() != null){
+            this.createdAt = putCommand.createdAt();
+        }
     }
 }
