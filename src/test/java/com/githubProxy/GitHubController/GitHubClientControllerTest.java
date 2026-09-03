@@ -2,17 +2,20 @@ package com.githubProxy.GitHubController;
 
 import com.githubProxy.GitHubService.GitHubClientService;
 import com.githubProxy.dto.RepositoryDto;
+import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
+import com.githubProxy.exceptions.RepositoryAlreadyExistsException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,7 +45,7 @@ class GitHubClientControllerTest {
                 "o la la takie fajne",
                 "htpp://api.github.urlToClone",
                 4L,
-                LocalDateTime.of(2021,2,22,12,22)
+                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
         );
         when(service.getByOwnerAndRepositoryName(owner,repoName)).thenReturn(expected);
         //When + Then
@@ -52,6 +55,7 @@ class GitHubClientControllerTest {
                         jsonPath("$.fullName").value("Owner owner"),
                         jsonPath("$.description").value("o la la takie fajne"),
                         jsonPath("$.cloneUrl").value("htpp://api.github.urlToClone"),
+                        jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
                         jsonPath("$.stargazersCount").value(4)
                 );
 
@@ -69,6 +73,60 @@ class GitHubClientControllerTest {
                         status().isNotFound(),
                         jsonPath("$.status").value(404),
                         jsonPath("$.message").value("Repository not found: "+url)
+                );
+    }
+    @Test
+    void create_WhenOwnerExistsAndFoundMatchingRepository_ShouldReturn201() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        GitHubRepositoryDto expected = new GitHubRepositoryDto(
+                1L,
+                "Owner",
+                "SomeRepoCoIstnieje",
+                "Owner/SomeRepoCoIstnieje",
+                "Some nice description",
+                "http://api.git/repos/Owner/SomeRepoCoIstnieje",
+                3L,
+                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
+        );
+        when(service.create(owner,repoName)).thenReturn(expected);
+        //When + Then
+        mockMvc.perform(post("/repos/{owner}/{repository-name}",owner,repoName))
+                .andExpectAll(
+                        status().isCreated(),
+                        jsonPath("$.id").value(1),
+                        jsonPath("$.owner").value("Owner"),
+                        jsonPath("$.repositoryName").value("SomeRepoCoIstnieje"),
+                        jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
+                        jsonPath("$.description").value("Some nice description"),
+                        jsonPath("$.stargazersCount").value(3),
+                        jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
+                        jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
+                );
+    }
+    @Test
+    void create_WhenRepositoryAlreadyExistsInOwnerRepository_ShouldReturn409() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        GitHubRepositoryDto expected = new GitHubRepositoryDto(
+                1L,
+                "Owner",
+                "SomeRepoCoIstnieje",
+                "Owner/SomeRepoCoIstnieje",
+                "Some nice description",
+                "http://api.git/repos/Owner/SomeRepoCoIstnieje",
+                3L,
+                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
+        );
+        when(service.create(owner,repoName)).thenThrow(new RepositoryAlreadyExistsException(owner,repoName));
+        //When + Then
+        mockMvc.perform(post("/repos/{owner}/{repository-name}",owner,repoName))
+                .andExpectAll(
+                        status().isConflict(),
+                        jsonPath("$.message").value(owner + " already has repository " + repoName),
+                        jsonPath("$.status").value(409)
                 );
     }
 }

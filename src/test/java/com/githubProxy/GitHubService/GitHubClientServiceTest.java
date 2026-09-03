@@ -74,7 +74,7 @@ class GitHubClientServiceTest {
                 () -> service.getByOwnerAndRepositoryName(owner, repoName));
     }
     @Test
-    void create_WhenRepositoryAndOwnerDoesExists_ShouldReturnMatchingDto(){
+    void create_WhenRepositoryAndOwnerDoesExists_ShouldReturnMappedDto(){
         //Given
         String owner = "Owner";
         String repoName = "ExistingRepo";
@@ -104,6 +104,31 @@ class GitHubClientServiceTest {
         );
     }
     @Test
+    void create_WhenRepositoryAndOwnerDoesExists_ShouldMapGitHubResponseToEntity(){
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeOtherExistingRepo";
+        GitHubResponse response = new GitHubResponse(
+                "Owner/SomeOtherExistingRepo",
+                "Some other fascinating description",
+                "http://api.github.someUrl",
+                1L,
+                OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC)
+
+        );
+        when(gitHubClient.getByOwnerAndRepositoryName(owner,repoName)).thenReturn(response);
+        service.create(owner,repoName);
+        ArgumentCaptor<GitHubRepositoryEntity> captor = ArgumentCaptor.forClass(GitHubRepositoryEntity.class);
+        verify(repository).save(captor.capture());
+        assertAll(
+                () -> assertEquals("Owner",captor.getValue().getOwner()),
+                () -> assertEquals("SomeOtherExistingRepo",captor.getValue().getRepositoryName()),
+                () -> assertEquals("http://api.github.someUrl",captor.getValue().getCloneUrl()),
+                () -> assertEquals("Some other fascinating description",captor.getValue().getDescription()),
+                () -> assertEquals(1L,captor.getValue().getStargazersCount())
+        );
+    }
+    @Test
     void create_WhenRepositoryAlreadyExists_ShouldThrowRepositoryAlreadyExistsException(){
         //Given
         String owner = "Owner";
@@ -113,5 +138,8 @@ class GitHubClientServiceTest {
         RepositoryAlreadyExistsException exception = assertThrows(RepositoryAlreadyExistsException.class,
                 () -> service.create(owner,repoName));
         assertTrue(exception.getMessage().contains(owner + " already has repository " + repoName));
+        verify(gitHubClient, never()).getByOwnerAndRepositoryName(any(), any());
+        verify(repository, never()).save(any());
     }
+
 }
