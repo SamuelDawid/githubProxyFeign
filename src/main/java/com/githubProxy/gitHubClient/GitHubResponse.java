@@ -2,7 +2,7 @@ package com.githubProxy.gitHubClient;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record GitHubResponse(
         @JsonProperty("full_name")
@@ -13,6 +13,6 @@ public record GitHubResponse(
         @JsonProperty("stargazers_count")
         Long stargazersCount,
         @JsonProperty("created_at")
-        LocalDateTime createdAt
+        OffsetDateTime createdAt
 ) {
 }
