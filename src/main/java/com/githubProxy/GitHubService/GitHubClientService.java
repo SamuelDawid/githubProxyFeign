@@ -2,7 +2,7 @@ package com.githubProxy.GitHubService;
 
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
-import com.githubProxy.exceptions.RepositoryAlreadyExists;
+import com.githubProxy.exceptions.RepositoryAlreadyExistsException;
 import com.githubProxy.gitHubClient.GitHubClient;
 import com.githubProxy.gitHubClient.GitHubResponse;
 import com.githubProxy.mappers.GitHubClientMapper;
@@ -33,7 +33,6 @@ public class GitHubClientService {
        GitHubResponse response = gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName);
         log.info("Found github repository {}",response);
         GitHubRepositoryEntity entity = gitHubClientMapper.toEntity(response,owner,repositoryName);
-        //Validation
         GitHubRepositoryEntity saved = repository.save(entity);
         log.info("Successfully Created Repository entity {}", saved);
         return gitHubClientMapper.toRepositoryDto(saved);
@@ -41,7 +40,8 @@ public class GitHubClientService {
 
     private void validateRepository(String owner, String repositoryName){
         if(repository.existsByOwnerAndRepositoryName(owner,repositoryName)){
-            throw new RepositoryAlreadyExists(owner,repositoryName);
+            log.error("Repository {} already exists for {}",repositoryName,owner);
+            throw new RepositoryAlreadyExistsException(owner,repositoryName);
         }
     }
 }
