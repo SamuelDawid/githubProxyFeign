@@ -1,6 +1,7 @@
 package com.githubProxy.GitHubController;
 
 import com.githubProxy.GitHubService.GitHubClientService;
+import com.githubProxy.dto.GitHubRepositoryPutCommand;
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
 import lombok.RequiredArgsConstructor;
@@ -25,5 +26,8 @@ public class GitHubClientController {
     public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
         return service.create(owner,repositoryName);
     }
-
+    @PutMapping("/repositories/{owner}/{repository-name}")
+    public GitHubRepositoryDto put(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command){
+        return service.update(owner,repositoryName,command);
+    }
 }
