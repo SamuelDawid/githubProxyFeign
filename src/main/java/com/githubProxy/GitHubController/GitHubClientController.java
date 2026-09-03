@@ -9,18 +9,21 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/repos")
 public class GitHubClientController {
     private final GitHubClientService service;
 
-    @GetMapping("/{owner}/{repository-name}")
+    @GetMapping("/repositories/{owner}/{repository-name}")
     public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
        return service.getByOwnerAndRepositoryName(owner,repositoryName);
     }
-
-    @PostMapping("/{owner}/{repository-name}")
+    @GetMapping("local/repositories/{owner}/{repository-name}")
+    public GitHubRepositoryDto getLocalRepositoryByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
+        return service.getLocalRepositoryByOwnerAndRepositoryName(owner,repositoryName);
+    }
+    @PostMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.CREATED)
     public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
         return service.create(owner,repositoryName);
     }
+
 }
