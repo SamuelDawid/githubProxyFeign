@@ -94,11 +94,9 @@ class GitHubClientServiceTest {
         verify(repository).save(any(GitHubRepositoryEntity.class));
         // Then
         assertAll(
-                () -> assertEquals("Owner",result.owner()),
-                () -> assertEquals("ExistingRepo",result.repositoryName()),
                 () -> assertEquals("http://api.github.someUrl",result.cloneUrl()),
                 () -> assertEquals("Some description",result.description()),
-                () -> assertEquals(3L,result.stargazersCount()),
+                () -> assertEquals(3L,result.stars()),
                 () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000,3,11,15,12),ZoneOffset.UTC),result.createdAt())
 
         );

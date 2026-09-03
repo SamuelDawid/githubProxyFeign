@@ -2,6 +2,7 @@ package com.githubProxy.GitHubService;
 
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
+import com.githubProxy.exceptions.LocalRepositoryNotFoundException;
 import com.githubProxy.exceptions.RepositoryAlreadyExistsException;
 import com.githubProxy.gitHubClient.GitHubClient;
 import com.githubProxy.gitHubClient.GitHubResponse;
@@ -11,6 +12,7 @@ import com.githubProxy.repositories.GitHubRepositoriesRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +28,10 @@ public class GitHubClientService {
         GitHubResponse response = gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName);
         log.info("Repository {} found with this details : {}",repositoryName,response);
         return gitHubClientMapper.toDto(response);
+    }
+    public GitHubRepositoryDto getLocalRepositoryByOwnerAndRepositoryName(@NonNull String owner, @NonNull String repositoryName){
+        log.info("Finding local repository {} by {}",repositoryName,owner);
+        return gitHubClientMapper.toRepositoryDto(findRepostioryByOwnerAndNameOrThrow(owner,repositoryName));
     }
     public GitHubRepositoryDto create(@NonNull String owner, @NonNull String repositoryName){
        log.info("Creating GitHubRepository entity for owner: {}, repository name: {}",owner,repositoryName);
@@ -43,5 +49,12 @@ public class GitHubClientService {
             log.error("Repository {} already exists for {}",repositoryName,owner);
             throw new RepositoryAlreadyExistsException(owner,repositoryName);
         }
+    }
+    private GitHubRepositoryEntity findRepostioryByOwnerAndNameOrThrow(String owner, String repositoryName){
+        return repository.findByOwnerAndRepositoryName(owner,repositoryName).orElseThrow(() ->{
+                    log.error("Local repository {} not found for {}",repositoryName,owner);
+                    return new LocalRepositoryNotFoundException(owner,repositoryName);
+                }
+        );
     }
 }

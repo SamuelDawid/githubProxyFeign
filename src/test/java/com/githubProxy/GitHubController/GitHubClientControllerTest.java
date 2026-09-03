@@ -8,7 +8,6 @@ import com.githubProxy.exceptions.RepositoryNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -17,11 +16,9 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -36,7 +33,7 @@ class GitHubClientControllerTest {
     GitHubClientService service;
 
     @Test
-    void getByOwnerAndRepositoryName_WhenOwnerAndRepositoryExists_ShouldReturn200() throws Exception{
+    void getByOwnerAndRepositoryName_WhenOwnerAndRepositoryExists_ShouldReturn200() throws Exception {
         //Given
         String owner = "owner";
         String repoName = "OlalalNoweRepo";
@@ -45,11 +42,11 @@ class GitHubClientControllerTest {
                 "o la la takie fajne",
                 "htpp://api.github.urlToClone",
                 4L,
-                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
+                OffsetDateTime.of(LocalDateTime.of(2021, 2, 22, 12, 22), ZoneOffset.UTC)
         );
-        when(service.getByOwnerAndRepositoryName(owner,repoName)).thenReturn(expected);
+        when(service.getByOwnerAndRepositoryName(owner, repoName)).thenReturn(expected);
         //When + Then
-        mockMvc.perform(get("/repos/{owner}/{repository-name}",owner,repoName))
+        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.fullName").value("Owner owner"),
@@ -60,69 +57,56 @@ class GitHubClientControllerTest {
                 );
 
     }
+
     @Test
-    void getByOwnerAndRepositoryName_WhenOwnerExistsButRepositoryNotExists_ShouldReturn404() throws Exception{
-       //Given
+    void getByOwnerAndRepositoryName_WhenOwnerExistsButRepositoryNotExists_ShouldReturn404() throws Exception {
+        //Given
         String owner = "owner";
         String repoName = "SomeRepoCoNieIstnieje";
         String url = "http://api.git/repos/owner/SomeRepoCoNieIstnieje";
-        when(service.getByOwnerAndRepositoryName(owner,repoName)).thenThrow(new RepositoryNotFoundException(url));
+        when(service.getByOwnerAndRepositoryName(owner, repoName)).thenThrow(new RepositoryNotFoundException(url));
         //When + Then
-        mockMvc.perform(get("/repos/{owner}/{repository-name}",owner,repoName))
+        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath("$.status").value(404),
-                        jsonPath("$.message").value("Repository not found: "+url)
+                        jsonPath("$.message").value("Repository not found: " + url)
                 );
     }
+
     @Test
     void create_WhenOwnerExistsAndFoundMatchingRepository_ShouldReturn201() throws Exception {
         //Given
         String owner = "Owner";
         String repoName = "SomeRepoCoIstnieje";
         GitHubRepositoryDto expected = new GitHubRepositoryDto(
-                1L,
-                "Owner",
-                "SomeRepoCoIstnieje",
                 "Owner/SomeRepoCoIstnieje",
                 "Some nice description",
                 "http://api.git/repos/Owner/SomeRepoCoIstnieje",
                 3L,
-                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
+                OffsetDateTime.of(LocalDateTime.of(2021, 2, 22, 12, 22), ZoneOffset.UTC)
         );
-        when(service.create(owner,repoName)).thenReturn(expected);
+        when(service.create(owner, repoName)).thenReturn(expected);
         //When + Then
-        mockMvc.perform(post("/repos/{owner}/{repository-name}",owner,repoName))
+        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName))
                 .andExpectAll(
                         status().isCreated(),
-                        jsonPath("$.id").value(1),
-                        jsonPath("$.owner").value("Owner"),
-                        jsonPath("$.repositoryName").value("SomeRepoCoIstnieje"),
                         jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
                         jsonPath("$.description").value("Some nice description"),
-                        jsonPath("$.stargazersCount").value(3),
+                        jsonPath("$.stars").value(3),
                         jsonPath("$.createdAt").value("2021-02-22T12:22:00Z"),
                         jsonPath("$.cloneUrl").value("http://api.git/repos/Owner/SomeRepoCoIstnieje")
                 );
     }
+
     @Test
     void create_WhenRepositoryAlreadyExistsInOwnerRepository_ShouldReturn409() throws Exception {
         //Given
         String owner = "Owner";
         String repoName = "SomeRepoCoIstnieje";
-        GitHubRepositoryDto expected = new GitHubRepositoryDto(
-                1L,
-                "Owner",
-                "SomeRepoCoIstnieje",
-                "Owner/SomeRepoCoIstnieje",
-                "Some nice description",
-                "http://api.git/repos/Owner/SomeRepoCoIstnieje",
-                3L,
-                OffsetDateTime.of(LocalDateTime.of(2021,2,22,12,22), ZoneOffset.UTC)
-        );
-        when(service.create(owner,repoName)).thenThrow(new RepositoryAlreadyExistsException(owner,repoName));
+        when(service.create(owner, repoName)).thenThrow(new RepositoryAlreadyExistsException(owner, repoName));
         //When + Then
-        mockMvc.perform(post("/repos/{owner}/{repository-name}",owner,repoName))
+        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName))
                 .andExpectAll(
                         status().isConflict(),
                         jsonPath("$.message").value(owner + " already has repository " + repoName),
