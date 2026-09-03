@@ -54,7 +54,13 @@ public class GitHubClientService {
         log.info("Successfully updated repository {} -> {}",repositoryName,entity);
         return gitHubClientMapper.toRepositoryDto(entity);
     }
-
+    @Transactional
+    public void delete(@NonNull String owner, @NonNull String repositoryName){
+        log.info("Removing repository {} from {}",repositoryName,owner);
+        GitHubRepositoryEntity entity = findRepositoryByOwnerAndNameOrThrow(owner,repositoryName);
+        repository.delete(entity);
+        log.info("Successfully removed repository {}",repositoryName);
+    }
     private void validateRepository(String owner, String repositoryName){
         if(repository.existsByOwnerAndRepositoryName(owner,repositoryName)){
             log.error("Repository {} already exists for {}",repositoryName,owner);
