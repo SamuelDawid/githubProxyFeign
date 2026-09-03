@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FeignGitHubClientConfiguration {
     @Bean
-    public ErrorDecoder GitHubErrorDecoder(){
+    public ErrorDecoder GitHubErrorDecoder() {
         return new GitHubClientErrorDecoder();
     }
 }

@@ -14,25 +14,29 @@ public class GitHubClientController {
     private final GitHubClientService service;
 
     @GetMapping("/repositories/{owner}/{repository-name}")
-    public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
-       return service.getByOwnerAndRepositoryName(owner,repositoryName);
+    public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
+        return service.getByOwnerAndRepositoryName(owner, repositoryName);
     }
+
     @GetMapping("local/repositories/{owner}/{repository-name}")
-    public GitHubRepositoryDto getLocalRepositoryByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
-        return service.getLocalRepositoryByOwnerAndRepositoryName(owner,repositoryName);
+    public GitHubRepositoryDto getLocalRepositoryByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
+        return service.getLocalRepositoryByOwnerAndRepositoryName(owner, repositoryName);
     }
+
     @PostMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.CREATED)
-    public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
-        return service.create(owner,repositoryName);
+    public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
+        return service.create(owner, repositoryName);
     }
+
     @PutMapping("/repositories/{owner}/{repository-name}")
-    public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command){
-        return service.update(owner,repositoryName,command);
+    public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command) {
+        return service.update(owner, repositoryName, command);
     }
+
     @DeleteMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName){
-        service.delete(owner,repositoryName);
+    public void delete(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
+        service.delete(owner, repositoryName);
     }
 }

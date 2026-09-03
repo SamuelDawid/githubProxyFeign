@@ -12,6 +12,7 @@ public interface GitHubClientMapper {
     RepositoryDto toDto(GitHubResponse response);
 
     GitHubRepositoryEntity toEntity(GitHubResponse response, String owner, String repositoryName);
+
     @Mapping(target = "stars", source = "stargazersCount")
     GitHubRepositoryDto toRepositoryDto(GitHubRepositoryEntity entity);
 }
