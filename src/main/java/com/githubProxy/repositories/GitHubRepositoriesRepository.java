@@ -8,5 +8,8 @@ import java.util.List;
 
 public interface GitHubRepositoriesRepository extends JpaRepository<GitHubRepositoryEntity, Long> {
     List<RepositoryDto> findAllByOwner(String owner);
-    RepositoryDto findByOwnerAndRepositoryName(String owner,String repositoryName);
+
+    RepositoryDto findByOwnerAndRepositoryName(String owner, String repositoryName);
+
+    boolean existsByOwnerAndRepositoryName(String owner, String repositoryName);
 }

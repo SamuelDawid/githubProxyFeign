@@ -2,10 +2,12 @@ package com.githubProxy.GitHubService;
 
 import com.githubProxy.dto.RepositoryDto;
 import com.githubProxy.dto.gitHubRepositoryEntity.GitHubRepositoryDto;
+import com.githubProxy.exceptions.RepositoryAlreadyExists;
 import com.githubProxy.gitHubClient.GitHubClient;
 import com.githubProxy.gitHubClient.GitHubResponse;
 import com.githubProxy.mappers.GitHubClientMapper;
 import com.githubProxy.models.GitHubRepositoryEntity;
+import com.githubProxy.repositories.GitHubRepositoriesRepository;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Service;
 public class GitHubClientService {
     private final GitHubClient gitHubClient;
     private final GitHubClientMapper gitHubClientMapper;
+    private final GitHubRepositoriesRepository repository;
 
     public RepositoryDto getByOwnerAndRepositoryName(@NonNull String owner, @NonNull String repositoryName) {
         log.info("Finding repository with name {} by {}", repositoryName, owner);
@@ -26,10 +29,19 @@ public class GitHubClientService {
     }
     public GitHubRepositoryDto create(@NonNull String owner, @NonNull String repositoryName){
        log.info("Creating GitHubRepository entity for owner: {}, repository name: {}",owner,repositoryName);
-        GitHubResponse response = gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName);
+       validateRepository(owner,repositoryName);
+       GitHubResponse response = gitHubClient.getByOwnerAndRepositoryName(owner, repositoryName);
         log.info("Found github repository {}",response);
         GitHubRepositoryEntity entity = gitHubClientMapper.toEntity(response,owner,repositoryName);
-        log.info("Successfully Created Repository entity {}", entity);
-        return gitHubClientMapper.toRepositoryDto(entity);
+        //Validation
+        GitHubRepositoryEntity saved = repository.save(entity);
+        log.info("Successfully Created Repository entity {}", saved);
+        return gitHubClientMapper.toRepositoryDto(saved);
+    }
+
+    private void validateRepository(String owner, String repositoryName){
+        if(repository.existsByOwnerAndRepositoryName(owner,repositoryName)){
+            throw new RepositoryAlreadyExists(owner,repositoryName);
+        }
     }
 }
