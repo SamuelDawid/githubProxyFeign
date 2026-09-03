@@ -51,8 +51,7 @@ public class GitHubClientService {
         log.info("Stared updating local repository {} by {}",owner,repositoryName);
         GitHubRepositoryEntity entity = findRepositoryByOwnerAndNameOrThrow(owner,repositoryName);
         entity.updateLocalRepository(putCommand);
-        GitHubRepositoryEntity saved = repository.save(entity);
-        log.info("Successfully updated repository {} -> {}",repositoryName,saved);
+        log.info("Successfully updated repository {} -> {}",repositoryName,entity);
         return gitHubClientMapper.toRepositoryDto(entity);
     }
 
