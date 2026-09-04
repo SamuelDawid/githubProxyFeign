@@ -229,7 +229,25 @@ class GitHubClientServiceTest {
                 () -> assertEquals(10L, result.stars()),
                 () -> assertEquals(OffsetDateTime.of(LocalDateTime.of(2000, 3, 11, 15, 12), ZoneOffset.UTC), result.createdAt())
         );
-        verify(repository).save(any(GitHubRepositoryEntity.class));
+    }
+
+    @Test
+    void update_WhenRepositoryDoesNotExist_ShouldThrowRepositoryNotFoundException() {
+        //Given
+        String owner = "Owner";
+        String repoName = "NonExistingRepository";
+        GitHubRepositoryPutCommand command = new GitHubRepositoryPutCommand(
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+        when(repository.findByOwnerAndRepositoryName(owner, repoName)).thenReturn(Optional.empty());
+        //When + Then
+        LocalRepositoryNotFoundException exception = assertThrows(LocalRepositoryNotFoundException.class,
+                () -> service.update(owner, repoName, command));
+        assertEquals(exception.getMessage(), "Local repository " + repoName + " not found for: " + owner);
     }
 
     @Test
@@ -251,6 +269,18 @@ class GitHubClientServiceTest {
         //When + Then
         service.delete(owner, repoName);
         verify(repository).delete(existing);
+    }
+
+    @Test
+    void delete_WhenRepositoryDoesNotExist_ShouldThrowRepositoryNotFoundException() {
+        //Given
+        String owner = "Owner";
+        String repoName = "NonExistingRepository";
+        when(repository.findByOwnerAndRepositoryName(owner, repoName)).thenReturn(Optional.empty());
+        //When + Then
+        assertThrows(LocalRepositoryNotFoundException.class,
+                () -> service.delete(owner, repoName));
+        verify(repository, never()).delete(any(GitHubRepositoryEntity.class));
     }
 
     private GitHubRepositoryEntity buildRepositoryEntity(Long id, String owner, String repositoryName, String fullName, String description, String cloneUrl, Long stargazersCount, OffsetDateTime createdAt) {

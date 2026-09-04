@@ -19,8 +19,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -194,11 +193,50 @@ class GitHubClientControllerTest {
     }
 
     @Test
+    void update_WhenLocalRepositoryDoesNotExist_ShouldReturn404() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = " SomeNotExistingRepository";
+        GitHubRepositoryPutCommand putCommand = new GitHubRepositoryPutCommand(
+                "Owner/SomeRepoCoIstnieje",
+                "newDescription",
+                null,
+                1L,
+                null
+        );
+        when(service.update(owner, repoName, putCommand)).thenThrow(new LocalRepositoryNotFoundException(owner, repoName));
+        //When + Then
+        mockMvc.perform(put("/repositories/{owner}/{repository-name}", owner, repoName)
+                        .content(objectMapper.writeValueAsString(putCommand))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpectAll(
+                        status().isNotFound(),
+                        jsonPath("$.message").value("Local repository " + repoName + " not found for: " + owner),
+                        jsonPath("$.status").value(404)
+
+                );
+    }
+
+    @Test
     void delete_WhenRepositoryExists_ShouldReturn204() throws Exception {
         //Given
         String owner = "Owner";
         String repoName = "SomeRepoCoIstnieje";
+        //When + Then
         mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName)).andExpect(status().isNoContent());
         verify(service).delete(owner, repoName);
+    }
+
+    @Test
+    void delete_WhenLocalRepositoryDoesNotExist_ShouldReturn404() throws Exception {
+        //Given
+        String owner = "Owner";
+        String repoName = "SomeRepoCoIstnieje";
+        doThrow(new LocalRepositoryNotFoundException(owner, repoName))
+                .when(service)
+                .delete(owner, repoName);
+        //When + Then
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName)).andExpect(status().isNotFound());
+        verify(service).delete(any(), any());
     }
 }
