@@ -32,7 +32,7 @@ public class GitHubClientController {
     public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
         return service.getByOwnerAndRepositoryName(owner, repositoryName);
     }
-    @Operation(summary = "Get a locally saved repository details")
+    @Operation(summary = "Get a locally persisted repository details")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Repository found",
                     content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class))),
@@ -44,9 +44,17 @@ public class GitHubClientController {
         return service.getLocalRepositoryByOwnerAndRepositoryName(owner, repositoryName);
     }
 
-    @Operation(summary = "Create a local repository record")
-    @ApiResponse(responseCode = "201", description = "Repository created",
-            content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class)))
+    @Operation(summary = "Create a local repository record from GitHub data")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Repository created",
+                    content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class))),
+            @ApiResponse(responseCode = "404", description = "Repository not found on GitHub",
+            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
+            @ApiResponse(responseCode = "409", description = "Local repository already exists",
+            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
+            @ApiResponse(responseCode = "502",description = "GitHub upstream error",
+                    content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
+    })
     @PostMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.CREATED)
     public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
