@@ -3,6 +3,7 @@ package com.githubProxy.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.OffsetDateTime;
+
 @Schema(description = "Payload for updating a local repository record")
 public record GitHubRepositoryPutCommand(
         @Schema(example = "octocat/Hello-World")

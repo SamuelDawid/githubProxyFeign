@@ -14,11 +14,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
 @Tag(name = "Repositories", description = "Manage GitHub-backed and locally stored repositories")
 @RestController
 @RequiredArgsConstructor
 public class GitHubClientController {
     private final GitHubClientService service;
+
     @Operation(summary = "Get a repository's live details from GitHub")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Repository found",
@@ -32,6 +34,7 @@ public class GitHubClientController {
     public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
         return service.getByOwnerAndRepositoryName(owner, repositoryName);
     }
+
     @Operation(summary = "Get a locally persisted repository details")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Repository found",
@@ -49,10 +52,10 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "201", description = "Repository created",
                     content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class))),
             @ApiResponse(responseCode = "404", description = "Repository not found on GitHub",
-            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
+                    content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
             @ApiResponse(responseCode = "409", description = "Local repository already exists",
-            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
-            @ApiResponse(responseCode = "502",description = "GitHub upstream error",
+                    content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
+            @ApiResponse(responseCode = "502", description = "GitHub upstream error",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
     @PostMapping("/repositories/{owner}/{repository-name}")
@@ -60,22 +63,24 @@ public class GitHubClientController {
     public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
         return service.create(owner, repositoryName);
     }
+
     @Operation(summary = "Update details of locally saved repository")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Repository updated",
-            content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class))),
-            @ApiResponse(responseCode = "404",description = "Repository not found",
-            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
+                    content = @Content(schema = @Schema(implementation = GitHubRepositoryDto.class))),
+            @ApiResponse(responseCode = "404", description = "Repository not found",
+                    content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
     @PutMapping("/repositories/{owner}/{repository-name}")
     public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command) {
         return service.update(owner, repositoryName, command);
     }
+
     @Operation(summary = "Remove local repository")
     @ApiResponses({
-            @ApiResponse(responseCode = "204",description = "Removed successfully"),
-            @ApiResponse(responseCode = "404",description = "Repository not found",
-            content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
+            @ApiResponse(responseCode = "204", description = "Removed successfully"),
+            @ApiResponse(responseCode = "404", description = "Repository not found",
+                    content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
     @DeleteMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

@@ -247,7 +247,7 @@ class GitHubClientServiceTest {
         //When + Then
         LocalRepositoryNotFoundException exception = assertThrows(LocalRepositoryNotFoundException.class,
                 () -> service.update(owner, repoName, command));
-        assertEquals(exception.getMessage(), "Local repository " + repoName + " not found for: " + owner);
+        assertEquals("Local repository " + repoName + " not found for: " + owner, exception.getMessage());
     }
 
     @Test
