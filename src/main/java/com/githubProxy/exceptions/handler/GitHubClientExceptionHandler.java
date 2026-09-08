@@ -2,6 +2,7 @@ package com.githubProxy.exceptions.handler;
 
 import com.githubProxy.dto.ErrorMessageDto;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
+import feign.RetryableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,16 @@ public class GitHubClientExceptionHandler {
                 .body(new ErrorMessageDto(exception.getStatus().value(),
                         exception.getMessage(),
                         LocalDateTime.now()));
+    }
+
+    @ExceptionHandler(RetryableException.class)
+    public ResponseEntity<ErrorMessageDto> handleRetryableException(RetryableException exception) {
+        log.error(" Rejected {} -> {}", exception.getMessage(), exception.status());
+        return ResponseEntity.status(exception.status())
+                .body(new ErrorMessageDto(
+                        exception.status(),
+                        "GitHub is temporarily unavailable, please try again later",
+                        LocalDateTime.now()
+                ));
     }
 }

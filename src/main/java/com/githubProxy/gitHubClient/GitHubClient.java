@@ -1,6 +1,6 @@
 package com.githubProxy.gitHubClient;
 
-import com.githubProxy.FeignClientConfiguration.FeignGitHubClientConfiguration;
+import com.githubProxy.feignClientConfiguration.FeignGitHubClientConfiguration;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
