@@ -1,9 +1,11 @@
 package com.githubProxy.GitHubController;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import com.githubProxy.GitHubService.GitHubClientService;
 import com.githubProxy.dto.RepositoryDto;
+import com.githubProxy.exceptions.GitHubUnavailableException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import com.githubProxy.models.GitHubRepositoryEntity;
 import com.githubProxy.repositories.GitHubRepositoriesRepository;
@@ -39,16 +41,10 @@ public class GitHubClientIntegrationTest {
     void getByOwnerAndRepositoryName_ShouldMapRepositoryDto() {
         String owner = "SamuelDawid";
         String repository = "medical-clinic";
-        String githubResponse = """
-                {
-                  "full_name": "SamuelDawid/medical-clinic",
-                  "description": null,
-                  "clone_url": "https://github.com/SamuelDawid/medical-clinic.git",
-                  "stargazers_count": 0,
-                  "created_at": "2026-07-13T12:04:30Z"
-                }
-                """;
-        stubFor(get("/SamuelDawid/medical-clinic").willReturn(okJson(githubResponse)));
+        stubFor(get("/SamuelDawid/medical-clinic").willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","application/json")
+                        .withBodyFile("realGitHubResponse.json")));
         RepositoryDto result = service.getByOwnerAndRepositoryName(owner, repository);
         assertEquals("SamuelDawid/medical-clinic", result.fullName());
         verify(getRequestedFor(urlEqualTo("/SamuelDawid/medical-clinic")));
@@ -84,16 +80,6 @@ public class GitHubClientIntegrationTest {
 
     @Test
     void getByOwnerAndRepositoryName_ShouldRetryOnceAndReturnResponseDto() {
-        String githubResponse = """
-                {
-                  "full_name": "SamuelDawid/medical-clinic",
-                  "description": null,
-                  "clone_url": "https://github.com/SamuelDawid/medical-clinic.git",
-                  "stargazers_count": 0,
-                  "created_at": "2026-07-13T12:04:30Z"
-                }
-                """;
-
         stubFor(get("/SamuelDawid/medical-clinic")
                 .inScenario("retry")
                 .whenScenarioStateIs(Scenario.STARTED)
@@ -102,7 +88,10 @@ public class GitHubClientIntegrationTest {
         stubFor(get("/SamuelDawid/medical-clinic")
                 .inScenario("retry")
                 .whenScenarioStateIs("attempt2")
-                .willReturn(okJson(githubResponse)));
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type","application/json")
+                        .withBodyFile("realGitHubResponse.json")));
 
         RepositoryDto repositoryDto = service.getByOwnerAndRepositoryName("SamuelDawid", "medical-clinic");
         assertEquals("SamuelDawid/medical-clinic", repositoryDto.fullName());
@@ -111,16 +100,11 @@ public class GitHubClientIntegrationTest {
 
     @Test
     void create_ShouldCreateGitHubEntityAndShouldMapRepositoryDtoToEntity() {
-        String githubResponse = """
-                {
-                  "full_name": "SamuelDawid/medical-clinic",
-                  "description": null,
-                  "clone_url": "https://github.com/SamuelDawid/medical-clinic.git",
-                  "stargazers_count": 0,
-                  "created_at": "2026-07-13T12:04:30Z"
-                }
-                """;
-        stubFor(get("/SamuelDawid/medical-clinic").willReturn(okJson(githubResponse)));
+        stubFor(get("/SamuelDawid/medical-clinic").willReturn(aResponse()
+                .withStatus(200)
+                .withHeader("Content-Type","application/json")
+                .withBodyFile("realGitHubResponse.json")
+        ));
         service.create("SamuelDawid", "medical-clinic");
         assertTrue(repository.existsByOwnerAndRepositoryName("SamuelDawid", "medical-clinic"));
         GitHubRepositoryEntity saved = repository
@@ -133,5 +117,33 @@ public class GitHubClientIntegrationTest {
                 () -> assertEquals(0L, saved.getStargazersCount()),
                 () -> assertEquals(OffsetDateTime.parse("2026-07-13T12:04:30Z"), saved.getCreatedAt())
         );
+    }
+    @Test
+    void getByOwnerAndRepositoryName_WhenConnectionFails_ShouldThrowGitHubUnavailable(){
+        //Given
+        stubFor(get("/owner/repo").willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
+        //When + Then
+        assertThrows(GitHubUnavailableException.class,
+                () -> service.getByOwnerAndRepositoryName("owner","repo"));
+    }
+
+    @Test
+    void getByOwnerAndRepositoryName_WhenTimeout_ShouldThrowGitHubUnavailable(){
+        //Given
+        stubFor(get("/owner/repo").willReturn(aResponse()
+                .withStatus(200)
+                .withFixedDelay(3000)));
+        //When + Then
+        assertThrows(GitHubUnavailableException.class,
+                () -> service.getByOwnerAndRepositoryName("owner", "repo"));
+    }
+
+    @Test
+    void  getByOwnerAndRepositoryName_WhenNotFound_ShouldNotTriggerFallback(){
+        //Given
+        stubFor(get("/owner/nieistniejace")
+                .willReturn(aResponse().withStatus(404)));
+        assertThrows(RepositoryNotFoundException.class,
+                () -> service.getByOwnerAndRepositoryName("owner", "nieistniejace"));
     }
 }

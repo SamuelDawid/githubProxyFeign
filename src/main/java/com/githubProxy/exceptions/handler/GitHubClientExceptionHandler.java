@@ -1,6 +1,7 @@
 package com.githubProxy.exceptions.handler;
 
 import com.githubProxy.dto.ErrorMessageDto;
+import com.githubProxy.exceptions.GitHubUnavailableException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import feign.RetryableException;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,17 @@ public class GitHubClientExceptionHandler {
                 .body(new ErrorMessageDto(
                         exception.status(),
                         "GitHub is temporarily unavailable, please try again later",
+                        LocalDateTime.now()
+                ));
+    }
+
+    @ExceptionHandler(GitHubUnavailableException.class)
+    public ResponseEntity<ErrorMessageDto> handleGitHubServiceUnavailable(GitHubUnavailableException exception){
+        log.error("GitHub Service unavailable, {} -> {} ",exception.getCause(),exception.getStatus());
+        return ResponseEntity.status(503)
+                .body(new ErrorMessageDto(
+                        exception.getStatus().value(),
+                        "GitHub Service Unavailable",
                         LocalDateTime.now()
                 ));
     }
