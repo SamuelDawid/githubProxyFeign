@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-GitHubRepository
+      author: Samuel Dawid
+      comment: "GitHubRepository entity table"
+      changes:
+        -createTable:
+          tableName: GIT_HUB_REPOSITORY
+          columns:
+            - column:
+                name: id
+                type: BIGINT
+                autoIncrement: true
+                constraints:
+                  primaryKey: true
+                  primaryKeyName: pk_gitHubRepository
+            - column:
+                name: owner
+                type: VARCHAR(255)
+                constraints:
+                  nullable: false
+            - column:
+                name: repository_name
+                type: VARCHAR(255)
+                constraints:
+                  nullable: false
+            - column:
+                name: full_name
+                type: VARCHAR
+                constraints:
+                  nullable: false
+            - column:
+                name: description
+                type: text
+                constraints:
+                  nullable: true
+            - column:
+                name: clone_url
+                type: varchar
+            - column:
+                name: stargazers_count
+                type: BIGINT
+            - column:
+                name: created_at
+                type: java.sql.types.timestamp_with_timezone
