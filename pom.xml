@@ -14,20 +14,9 @@
 	<name/>
 	<description/>
 	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
-	<properties>
 
+	<properties>
+		<tomcat.version>11.0.27</tomcat.version>
 		<sonar.organization>samueldawid</sonar.organization>
 		<sonar.projectKey>SamuelDawid_githubProxyFeign</sonar.projectKey>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -60,6 +49,7 @@
 			<groupId>org.wiremock.integrations</groupId>
 			<artifactId>wiremock-spring-boot</artifactId>
 			<version>${wiremock.integrations.version}</version>
+			<scope>test</scope>
 		</dependency>
 		<!-- Source: https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-circuitbreaker-resilience4j -->
 		<dependency>
@@ -140,6 +130,22 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.owasp</groupId>
+				<artifactId>dependency-check-maven</artifactId>
+				<version>13.0.0</version>
+				<configuration>
+					<failBuildOnCVSS>7</failBuildOnCVSS>
+					<nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+					<formats>
+						<format>HTML</format>
+						<format>JSON</format>
+					</formats>
+					<suppressionFiles>
+						<suppressionFile>dependency-check-suppression.xml</suppressionFile>
+					</suppressionFiles>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>

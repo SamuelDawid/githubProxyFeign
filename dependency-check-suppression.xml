@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <suppress>
+        <notes><![CDATA[
+            CVE-2026-53914 dotyczy deserializacji metadanych build cache w narzędziach
+            budowania Kotlina (kompilator / cache buildów). Projekt nie kompiluje Kotlina;
+            kotlin-stdlib jest wyłącznie zależnością przechodnią resilience4j-core
+            używaną w runtime. Podatny komponent nie występuje w aplikacji.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin\-stdlib.*$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+</suppressions>
