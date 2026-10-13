@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Repositories", description = "Manage GitHub-backed and locally stored repositories")
@@ -30,6 +31,8 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "502", description = "GitHub upstream error",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
+    // ━━━ Odczyt z GitHuba — USER (MANAGER i ADMIN dziedziczą USER w Keycloaku) ━━━
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("/repositories/{owner}/{repository-name}")
     public RepositoryDto getByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
         return service.getByOwnerAndRepositoryName(owner, repositoryName);
@@ -42,6 +45,8 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "404", description = "Not found",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class))),
     })
+    // ━━━ Odczyt kopii lokalnej — USER ━━━
+    @PreAuthorize("hasRole('USER')")
     @GetMapping("local/repositories/{owner}/{repository-name}")
     public GitHubRepositoryDto getLocalRepositoryByOwnerAndRepositoryName(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
         return service.getLocalRepositoryByOwnerAndRepositoryName(owner, repositoryName);
@@ -58,6 +63,8 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "502", description = "GitHub upstream error",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
+    // ━━━ Zapis kopii lokalnej — MANAGER ━━━
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.CREATED)
     public GitHubRepositoryDto create(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
@@ -71,6 +78,8 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "404", description = "Repository not found",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
+    // ━━━ Aktualizacja kopii lokalnej — MANAGER ━━━
+    @PreAuthorize("hasRole('MANAGER')")
     @PutMapping("/repositories/{owner}/{repository-name}")
     public GitHubRepositoryDto update(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName, @RequestBody GitHubRepositoryPutCommand command) {
         return service.update(owner, repositoryName, command);
@@ -82,6 +91,8 @@ public class GitHubClientController {
             @ApiResponse(responseCode = "404", description = "Repository not found",
                     content = @Content(schema = @Schema(implementation = ErrorMessageDto.class)))
     })
+    // ━━━ Usuwanie — tylko ADMIN ━━━
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/repositories/{owner}/{repository-name}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable("owner") String owner, @PathVariable("repository-name") String repositoryName) {
