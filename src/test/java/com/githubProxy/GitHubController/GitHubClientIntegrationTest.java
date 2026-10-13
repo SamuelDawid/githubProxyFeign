@@ -9,11 +9,11 @@ import com.githubProxy.exceptions.GitHubUnavailableException;
 import com.githubProxy.exceptions.RepositoryNotFoundException;
 import com.githubProxy.models.GitHubRepositoryEntity;
 import com.githubProxy.repositories.GitHubRepositoriesRepository;
-import feign.RetryableException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.wiremock.spring.EnableWireMock;
 
@@ -42,9 +42,9 @@ public class GitHubClientIntegrationTest {
         String owner = "SamuelDawid";
         String repository = "medical-clinic";
         stubFor(get("/SamuelDawid/medical-clinic").willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type","application/json")
-                        .withBodyFile("realGitHubResponse.json")));
+                .withStatus(200)
+                .withHeader("Content-Type", "application/json")
+                .withBodyFile("realGitHubResponse.json")));
         RepositoryDto result = service.getByOwnerAndRepositoryName(owner, repository);
         assertEquals("SamuelDawid/medical-clinic", result.fullName());
         verify(getRequestedFor(urlEqualTo("/SamuelDawid/medical-clinic")));
@@ -72,9 +72,9 @@ public class GitHubClientIntegrationTest {
         stubFor(get("/owner/repo").inScenario("retry")
                 .whenScenarioStateIs("attempt3")
                 .willReturn(aResponse().withStatus(503)));
-        RetryableException exception = assertThrows(RetryableException.class,
+        GitHubUnavailableException exception = assertThrows(GitHubUnavailableException.class,
                 () -> service.getByOwnerAndRepositoryName("owner", "repo"));
-        assertEquals(503, exception.status());
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, exception.getStatus());
         verify(3, getRequestedFor(urlEqualTo("/owner/repo")));
     }
 
@@ -90,7 +90,7 @@ public class GitHubClientIntegrationTest {
                 .whenScenarioStateIs("attempt2")
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withHeader("Content-Type","application/json")
+                        .withHeader("Content-Type", "application/json")
                         .withBodyFile("realGitHubResponse.json")));
 
         RepositoryDto repositoryDto = service.getByOwnerAndRepositoryName("SamuelDawid", "medical-clinic");
@@ -102,7 +102,7 @@ public class GitHubClientIntegrationTest {
     void create_ShouldCreateGitHubEntityAndShouldMapRepositoryDtoToEntity() {
         stubFor(get("/SamuelDawid/medical-clinic").willReturn(aResponse()
                 .withStatus(200)
-                .withHeader("Content-Type","application/json")
+                .withHeader("Content-Type", "application/json")
                 .withBodyFile("realGitHubResponse.json")
         ));
         service.create("SamuelDawid", "medical-clinic");
@@ -118,17 +118,18 @@ public class GitHubClientIntegrationTest {
                 () -> assertEquals(OffsetDateTime.parse("2026-07-13T12:04:30Z"), saved.getCreatedAt())
         );
     }
+
     @Test
-    void getByOwnerAndRepositoryName_WhenConnectionFails_ShouldThrowGitHubUnavailable(){
+    void getByOwnerAndRepositoryName_WhenConnectionFails_ShouldThrowGitHubUnavailable() {
         //Given
         stubFor(get("/owner/repo").willReturn(aResponse().withFault(Fault.CONNECTION_RESET_BY_PEER)));
         //When + Then
         assertThrows(GitHubUnavailableException.class,
-                () -> service.getByOwnerAndRepositoryName("owner","repo"));
+                () -> service.getByOwnerAndRepositoryName("owner", "repo"));
     }
 
     @Test
-    void getByOwnerAndRepositoryName_WhenTimeout_ShouldThrowGitHubUnavailable(){
+    void getByOwnerAndRepositoryName_WhenTimeout_ShouldThrowGitHubUnavailable() {
         //Given
         stubFor(get("/owner/repo").willReturn(aResponse()
                 .withStatus(200)
@@ -139,7 +140,7 @@ public class GitHubClientIntegrationTest {
     }
 
     @Test
-    void  getByOwnerAndRepositoryName_WhenNotFound_ShouldNotTriggerFallback(){
+    void getByOwnerAndRepositoryName_WhenNotFound_ShouldNotTriggerFallback() {
         //Given
         stubFor(get("/owner/nieistniejace")
                 .willReturn(aResponse().withStatus(404)));

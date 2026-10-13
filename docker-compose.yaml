@@ -1,0 +1,118 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - elk-network
+
+  logstash:
+      build:
+        context: ./logstash
+        dockerfile: Dockerfile
+      ports:
+        - "5000:5000"
+      networks:
+        - elk-network
+      depends_on:
+        - elasticsearch
+
+  kibana:
+      image: docker.elastic.co/kibana/kibana:8.17.4
+      ports:
+        - "5601:5601"
+      environment:
+        - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      networks:
+        - elk-network
+      depends_on:
+        - elasticsearch
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: sa
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - elk-network
+
+  pgadmin:
+    image: dpage/pgadmin4:9.13
+    container_name: pgadmin
+    environment:
+      PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
+      PGADMIN_DEFAULT_PASSWORD: strong-password
+    ports:
+      - "5050:5050"
+    volumes:
+      - pgadmin_admin:/var/lib/pgadmin
+    networks:
+      - elk-network
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/testdb
+      LOGSTASH_HOST: logstash
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8180/realms/githubProxy-dev/protocol/openid-connect/certs
+    depends_on:
+      - db
+      - logstash
+      - keycloak
+    networks:
+      - elk-network
+      - kc-net
+
+
+  keycloak-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-db_secret_change_me}
+    volumes:
+      - keycloak_pgdata:/var/lib/postgresql/data
+    networks:
+      - kc-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    command:
+      - start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-db_secret_change_me}
+      KC_HOSTNAME: http://localhost:8180
+      KC_HTTP_PORT: 8180
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin}
+    ports:
+      - "8180:8180"
+    depends_on:
+      - keycloak-db
+    networks:
+      - kc-net
+volumes:
+  postgres_data:
+  pgadmin_admin:
+  es_data:
+  keycloak_pgdata:
+
+networks:
+  elk-network:
+  kc-net:
