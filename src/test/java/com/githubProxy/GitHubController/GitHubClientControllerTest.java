@@ -13,8 +13,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
@@ -22,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -36,7 +40,25 @@ class GitHubClientControllerTest {
     ObjectMapper objectMapper;
     @MockitoBean
     GitHubClientService service;
+    @MockitoBean
+    JwtDecoder jwtDecoder;
 
+    private static RequestPostProcessor asUser(){
+        return jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"));
+    }
+    private static RequestPostProcessor asManager(){
+        return jwt().authorities(
+                new SimpleGrantedAuthority("ROLE_USER"),
+                new SimpleGrantedAuthority("ROLE_MANAGER")
+        );
+    }
+    private static RequestPostProcessor asAdmin(){
+        return jwt().authorities(
+                new SimpleGrantedAuthority("ROLE_USER"),
+                new SimpleGrantedAuthority("ROLE_MANAGER"),
+                new SimpleGrantedAuthority("ROLE_ADMIN")
+        );
+    }
     @Test
     void getByOwnerAndRepositoryName_WhenOwnerAndRepositoryExists_ShouldReturn200() throws Exception {
         //Given
@@ -51,7 +73,7 @@ class GitHubClientControllerTest {
         );
         when(service.getByOwnerAndRepositoryName(owner, repoName)).thenReturn(expected);
         //When + Then
-        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName).with(asUser()))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.fullName").value("Owner owner"),
@@ -71,7 +93,7 @@ class GitHubClientControllerTest {
         String url = "http://api.git/repos/owner/SomeRepoCoNieIstnieje";
         when(service.getByOwnerAndRepositoryName(owner, repoName)).thenThrow(new RepositoryNotFoundException(url));
         //When + Then
-        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(get("/repositories/{owner}/{repository-name}", owner, repoName).with(asUser()))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath("$.status").value(404),
@@ -93,7 +115,7 @@ class GitHubClientControllerTest {
         );
         when(service.create(owner, repoName)).thenReturn(expected);
         //When + Then
-        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName).with(asManager()))
                 .andExpectAll(
                         status().isCreated(),
                         jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
@@ -111,14 +133,19 @@ class GitHubClientControllerTest {
         String repoName = "SomeRepoCoIstnieje";
         when(service.create(owner, repoName)).thenThrow(new RepositoryAlreadyExistsException(owner, repoName));
         //When + Then
-        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(post("/repositories/{owner}/{repository-name}", owner, repoName).with(asManager()))
                 .andExpectAll(
                         status().isConflict(),
                         jsonPath("$.message").value(owner + " already has repository " + repoName),
                         jsonPath("$.status").value(409)
                 );
     }
-
+    @Test
+    void create_WhenUserHasOnlyUserRole_ShouldReturn403() throws Exception{
+        mockMvc.perform(post("/repositories/{owner}/{repository-name}","Owner","repo").with(asUser()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
+    }
     @Test
     void getLocalRepositoryByOwnerAndRepositoryName_WhenLocalRepositoryExists_ShouldReturn200() throws Exception {
         //Given
@@ -134,7 +161,7 @@ class GitHubClientControllerTest {
         );
         when(service.getLocalRepositoryByOwnerAndRepositoryName(owner, repoName)).thenReturn(expected);
         //When
-        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName).with(asUser()))
                 .andExpectAll(
                         status().isOk(),
                         jsonPath("$.fullName").value("Owner/SomeRepoCoIstnieje"),
@@ -153,7 +180,7 @@ class GitHubClientControllerTest {
         String repoName = "SomeRepoCoIstnieje";
         when(service.getLocalRepositoryByOwnerAndRepositoryName(owner, repoName)).thenThrow(new LocalRepositoryNotFoundException(owner, repoName));
         //When + Then
-        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName))
+        mockMvc.perform(get("/local/repositories/{owner}/{repository-name}", owner, repoName).with(asUser()))
                 .andExpectAll(
                         status().isNotFound(),
                         jsonPath("$.message").value("Local repository " + repoName + " not found for: " + owner),
@@ -183,6 +210,7 @@ class GitHubClientControllerTest {
         when(service.update(owner, repoName, putCommand)).thenReturn(expected);
         //When + Then
         mockMvc.perform(put("/repositories/{owner}/{repository-name}", owner, repoName)
+                        .with(asManager())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsBytes(putCommand)))
                 .andExpectAll(
@@ -210,6 +238,7 @@ class GitHubClientControllerTest {
         when(service.update(owner, repoName, putCommand)).thenThrow(new LocalRepositoryNotFoundException(owner, repoName));
         //When + Then
         mockMvc.perform(put("/repositories/{owner}/{repository-name}", owner, repoName)
+                        .with(asManager())
                         .content(objectMapper.writeValueAsString(putCommand))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpectAll(
@@ -226,7 +255,8 @@ class GitHubClientControllerTest {
         String owner = "Owner";
         String repoName = "SomeRepoCoIstnieje";
         //When + Then
-        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName)).andExpect(status().isNoContent());
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName).with(asAdmin()))
+                .andExpect(status().isNoContent());
         verify(service).delete(owner, repoName);
     }
 
@@ -239,7 +269,14 @@ class GitHubClientControllerTest {
                 .when(service)
                 .delete(owner, repoName);
         //When + Then
-        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName)).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", owner, repoName).with(asAdmin()))
+                .andExpect(status().isNotFound());
         verify(service).delete(any(), any());
+    }
+    @Test
+    void delete_WhenUserIsOnlyManager_ShouldReturn403() throws Exception{
+        mockMvc.perform(delete("/repositories/{owner}/{repository-name}", "Owner", "repo").with(asManager()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(service);
     }
 }
