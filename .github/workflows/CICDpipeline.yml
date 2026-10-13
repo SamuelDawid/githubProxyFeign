@@ -10,7 +10,15 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+       image: postgres:16         
+       env:
+          POSTGRES_DB: testdb          # nazwa bazy z application.yml
+          POSTGRES_USER: sa
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
