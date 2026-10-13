@@ -14,11 +14,13 @@ jobs:
       postgres:
        image: postgres:16         
        env:
-          POSTGRES_DB: testdb          # nazwa bazy z application.yml
+          POSTGRES_DB: testdb          
           POSTGRES_USER: sa
           POSTGRES_PASSWORD: password
-        ports:
+       ports:
           - 5432:5432
+       options: >-
+          --health-cmd pg_isready
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
