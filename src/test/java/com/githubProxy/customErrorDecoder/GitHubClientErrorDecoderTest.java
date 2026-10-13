@@ -7,7 +7,7 @@ import feign.Response;
 import feign.RetryableException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -15,6 +15,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
+@ActiveProfiles("test")
 class GitHubClientErrorDecoderTest {
 
     private GitHubClientErrorDecoder decoder;
@@ -58,6 +59,7 @@ class GitHubClientErrorDecoderTest {
         Exception result = decoder.decode("GitHubClient#getRepo(String,String)", response);
         assertEquals(RetryableException.class, result.getClass());
     }
+
     @Test
     void decode_When503_ShouldReturnRetryableException() {
         //Given
@@ -66,6 +68,7 @@ class GitHubClientErrorDecoderTest {
         Exception result = decoder.decode("GitHubClient#getRepo(String,String)", response);
         assertEquals(RetryableException.class, result.getClass());
     }
+
     @Test
     void decode_When504_ShouldReturnRetryableException() {
         //Given
@@ -74,12 +77,13 @@ class GitHubClientErrorDecoderTest {
         Exception result = decoder.decode("GitHubClient#getRepo(String,String)", response);
         assertEquals(RetryableException.class, result.getClass());
     }
+
     @Test
-    void decode_When500_ShouldReturnGitHubClientException(){
+    void decode_When500_ShouldReturnGitHubClientException() {
         //Given
-        Response response = responseWithStatus(500,"Bad Request");
+        Response response = responseWithStatus(500, "Bad Request");
         //When + Then
         Exception result = decoder.decode("GitHubClient#getRepo(String,String)", response);
-        assertEquals(GitHubClientException.class,result.getClass());
+        assertEquals(GitHubClientException.class, result.getClass());
     }
 }

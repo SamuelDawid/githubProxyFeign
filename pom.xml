@@ -27,6 +27,10 @@
 		<url/>
 	</scm>
 	<properties>
+
+		<sonar.organization>samueldawid</sonar.organization>
+		<sonar.projectKey>SamuelDawid_githubProxyFeign</sonar.projectKey>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<java.version>21</java.version>
 		<spring-cloud.version>2025.1.3</spring-cloud.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
@@ -136,6 +140,25 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.8.13</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -10,6 +10,7 @@ import com.githubProxy.exceptions.RepositoryNotFoundException;
 import com.githubProxy.models.GitHubRepositoryEntity;
 import com.githubProxy.repositories.GitHubRepositoriesRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +36,11 @@ public class GitHubClientIntegrationTest {
     @AfterEach
     void resetWireMock() {
         WireMock.reset();
+    }
+
+    @BeforeEach
+    void cleanDatabase() {
+        repository.deleteAll();
     }
 
     @Test
