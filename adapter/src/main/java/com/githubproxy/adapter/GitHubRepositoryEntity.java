@@ -1,6 +1,5 @@
 package com.githubproxy.adapter;
 
-import com.githubProxy.GitHubRepositoryPutCommand;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -53,23 +52,5 @@ public class GitHubRepositoryEntity {
     @Override
     public int hashCode() {
         return getClass().hashCode();
-    }
-
-    public void updateLocalRepository(GitHubRepositoryPutCommand putCommand) {
-        if (putCommand.fullName() != null) {
-            this.fullName = putCommand.fullName();
-        }
-        if (putCommand.cloneUrl() != null) {
-            this.cloneUrl = putCommand.cloneUrl();
-        }
-        if (putCommand.description() != null) {
-            this.description = putCommand.description();
-        }
-        if (putCommand.stars() != null) {
-            this.stargazersCount = putCommand.stars();
-        }
-        if (putCommand.createdAt() != null) {
-            this.createdAt = putCommand.createdAt();
-        }
     }
 }
