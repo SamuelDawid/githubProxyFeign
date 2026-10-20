@@ -1,10 +1,7 @@
 package com.githubproxy.adapter;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.OffsetDateTime;
 
@@ -12,6 +9,7 @@ import java.time.OffsetDateTime;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 @Table(name = "GIT_HUB_REPOSITORY")
 public class GitHubRepositoryEntity {
     @Id
@@ -27,16 +25,6 @@ public class GitHubRepositoryEntity {
     private String cloneUrl;
     private Long stargazersCount;
     private OffsetDateTime createdAt;
-
-    public GitHubRepositoryEntity(String owner, String repositoryName, String fullName, String description, String cloneUrl, Long stargazersCount, OffsetDateTime createdAt) {
-        this.owner = owner;
-        this.repositoryName = repositoryName;
-        this.fullName = fullName;
-        this.description = description;
-        this.cloneUrl = cloneUrl;
-        this.stargazersCount = stargazersCount;
-        this.createdAt = createdAt;
-    }
 
     @Override
     public boolean equals(Object o) {
